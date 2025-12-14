@@ -10,7 +10,7 @@ PytorchDRL/
 ├── algorithms/                 # algorithm-level logic (generic)
 │   │
 │   ├── common/                 # shared algorithm abstractions
-│   │   └── env_interface.py    # EnvBatch ABC
+│   │   └── env_interface.py    # Environment ABC
 │   │
 │   ├── ppo/
 │   │   ├── interfaces.py       # PPO-specific ABCs
