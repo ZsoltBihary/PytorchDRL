@@ -17,7 +17,7 @@ PytorchDRL/
 │   │   ├── buffer.py           # RolloutBuffer
 │   │   ├── trainer.py          # PPOTrainer
 │   │   └── networks/
-│   │       ├── base.py         # ActorCriticNet ABC
+│   │       ├── base.py         # ActorCritic ABC
 │   │       ├── mlp.py
 │   │       ├── conv1d.py
 │   │       └── resconv1d.py

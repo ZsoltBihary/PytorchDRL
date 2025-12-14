@@ -13,6 +13,16 @@ class Environment(ABC):
         """Number of parallel environments."""
         ...
 
+    @property
+    @abstractmethod
+    def obs_shape(self) -> tuple[int, ...]:
+        """
+        Shape of a single observation (without batch dimension).
+        Returns:
+            tuple of ints representing observation dimensions, e.g., (C, L)
+        """
+        ...
+
     @abstractmethod
     def reset(self) -> Observation:
         """Reset environment and return initial observation."""
