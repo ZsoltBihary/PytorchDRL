@@ -98,7 +98,7 @@ PytorchDRL/
 │       └── other.py             
 │
 ├── envs/               # User extension space for concrete environments
-│   ├── ipd/
+│   ├── ipd/                # Iterated Prisoner's Dilemma problem
 │   │   ├── config.py
 │   │   ├── environment.py
 │   │   └── utilities.py
