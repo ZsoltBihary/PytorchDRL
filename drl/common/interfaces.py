@@ -74,7 +74,7 @@ class PolicyValueModel(nn.Module, ABC):
         ...
 
 
-class QValueModel(ABC):
+class QValueModel(nn.Module, ABC):
     """forward(obs) -> q_values"""
 
     @abstractmethod
@@ -82,7 +82,7 @@ class QValueModel(ABC):
         ...
 
 
-class PolicyOnlyModel(ABC):
+class PolicyOnlyModel(nn.Module, ABC):
     """forward(obs) -> policy_logits"""
 
     @abstractmethod

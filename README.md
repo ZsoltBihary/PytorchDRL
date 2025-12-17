@@ -17,7 +17,7 @@ The design is based on four core abstractions: Environment, Model (Network), Age
 - **Does NOT:** 
   - Learn
   - Know about neural networks
-  - Handle training logic.
+  - Handle training logic
 
 ### 2. Model (The brain)
 - **What it is:** A pure function approximator (`nn.Module`)
@@ -27,7 +27,7 @@ The design is based on four core abstractions: Environment, Model (Network), Age
 - **Does NOT:** 
   - Sample actions
   - Implement algorithm logic
-- Each Model is one of these variants:
+- Each model is one of these variants:
     - Policy-value: `forward(obs) -> (policy_logits, value)`
     - Q-value: `forward(obs) -> q_values`
     - Policy-only: `forward(obs) -> policy_logits`
@@ -42,18 +42,20 @@ The design is based on four core abstractions: Environment, Model (Network), Age
   - Own optimizers, 
   - Support training logic
   - Know about the algorithm that trained it
-- Each Agent uses one of the Model variants
+- Each agent uses one of the model variants.
 - Agents are intentionally thin and stable. They are designed to survive the training process.
 
 ### 4. Trainer (The teacher)
 - **What it is:** The implementation of an algorithm that performs one single learning step.
 - **Responsibilities:** 
-  - Own environment, agent, optimizer
+  - Own environment, optimizer
   - Own and manage algorithm-specific buffer
-  - Run rollout collection, training loops
-  - Compute algorithm-specific auxiliary variables using agent's Model
-- **Does NOT:** Schedule multistep learning process
-- The Trainer's algorithm has to be compatible with the Agent's Model variant. Examples:
+  - Own model(s), compute algorithm-specific auxiliary variables
+  - Run rollout collection, update model
+- **Does NOT:**
+  - Directly own agent
+  - Schedule multistep learning process
+- The trainer's algorithm has to be compatible with its model variant. Examples:
     - PPO -> Policy-value
     - DQN -> Q-value
 - The trainer performs only one learning step, but may use experience from previous steps.
