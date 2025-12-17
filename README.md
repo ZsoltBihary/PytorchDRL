@@ -1,151 +1,118 @@
-# PytorchDRL – Conceptual Architecture
+# PytorchDRL 
 
-This project follows a clear, algorithm-agnostic abstraction hierarchy for deep reinforcement learning. The goal is conceptual clarity, extensibility across algorithms (PPO, DQN, etc.), and long-term maintainability. The design is based on four core abstractions: Environment, Model (Network), Agent, and Trainer. These abstractions cleanly separate what the world is, what the model computes, what the algorithm is, and how learning is orchestrated.
+## Conceptual Architecture
+
+This project follows a clear abstraction hierarchy for deep reinforcement learning. 
+The goal is conceptual clarity, extensibility across algorithms (PPO, DQN, etc.), and long-term maintainability. 
+The design is based on four core abstractions: Environment, Model (Network), Agent, and Trainer. 
 
 ## Core Abstractions
 
-### 1. Environment
-- **What it is:** A simulator of environment dynamics.
-- **Responsibilities:** Store environment state; apply actions; produce observations, rewards, and termination flags.
-- **Does NOT:** Learn, know about neural networks, or handle training logic.
-- **Typical interface:**
-    obs = env.reset()
-    obs, reward, done = env.step(action)
+### 1. Environment (The world)
+- **What it is:** A simulator of environment dynamics
+- **Responsibilities:** 
+  - Maintain environment state 
+  - Apply actions
+  - Produce observations, rewards, and termination flags
+- **Does NOT:** 
+  - Learn
+  - Know about neural networks
+  - Handle training logic.
 
-### 2. Model (Network)
-- **What it is:** A pure function approximator (always an `nn.Module`).
-- **Responsibilities:** Map observations to predictions; provide differentiable outputs.
-- **Examples:**
-    - PPO: `forward(obs) -> (policy_logits, value)`
-    - DQN: `forward(obs) -> q_values`
+### 2. Model (The brain)
+- **What it is:** A pure function approximator (`nn.Module`)
+- **Responsibilities:** 
+  - Map observations to predictions
+  - Provide differentiable outputs
+- **Does NOT:** 
+  - Sample actions
+  - Implement algorithm logic
+- Each Model is one of these variants:
+    - Policy-value: `forward(obs) -> (policy_logits, value)`
+    - Q-value: `forward(obs) -> q_values`
     - Policy-only: `forward(obs) -> policy_logits`
-- **Does NOT:** Sample actions, store experience, or implement algorithm logic.
 
-### 3. Agent (the algorithm)
-- **What it is:** The intelligence of the system; algorithm-specific logic.
-- **Responsibilities:** Own model(s); define how actions are selected; define how actions are evaluated for training; implement algorithm-specific computations.
-- **Typical methods:**
-    action = agent.act(obs)
-    metrics = agent.evaluate_actions(obs, actions)
-    loss = agent.compute_loss(batch)
-- **Does NOT:** Own optimizers, control training loops, or manage rollout length or epochs.
-- The Agent is what remains usable after training, during evaluation or deployment.
+### 3. Agent (The student)
+- **What it is:** The trained actor that interacts with the environment
+- **Responsibilities:** 
+  - Own trained model(s)
+  - Select action given observation
+  - Support evaluation and deployment
+- **Does NOT:** 
+  - Own optimizers, 
+  - Support training logic
+  - Know about the algorithm that trained it
+- Each Agent uses one of the Model variants
+- Agents are intentionally thin and stable. They are designed to survive the training process.
 
-### 4. Trainer (the learning process)
-- **What it is:** Orchestrator of learning.
-- **Responsibilities:** Own environment(s), buffer(s), and optimizer(s); run rollout collection; run training loops; call Agent methods.
-- **Does NOT:** Implement algorithm math, know model internals, or decide how actions are computed internally.
-
-## Ownership Structure
-```text
-Trainer  
- ├── Environment  
- ├── Agent  
- │    ├── Model(s)  
- │    └── Policy logic  
- ├── Buffer  
- └── Optimizer
-```
-
-## Interaction Flow (Algorithm-Agnostic)
-
-### Training Loop (High-Level)
-1. Trainer resets environment  
-2. Trainer asks Agent to act  
-3. Environment steps  
-4. Trainer stores transitions  
-5. Rollout or replay buffer fills  
-6. Trainer asks Agent to compute training quantities  
-7. Trainer applies optimizer updates
-
-### Example: PPO Interaction
-    obs = env.reset()
-    for t in rollout:
-        action, logp, value = agent.act(obs)
-        next_obs, reward, done = env.step(action)
-        buffer.add(obs, action, reward, done, value, logp)
-        obs = next_obs
-    buffer.compute_gae(last_value=agent.estimate_value(obs))
-    for batch in buffer:
-        loss = agent.compute_loss(batch)
-        optimizer.step()
-
-### Example: DQN Interaction
-    obs = env.reset()
-    for t in steps:
-        action = agent.act(obs)
-        next_obs, reward, done = env.step(action)
-        replay_buffer.add(obs, action, reward, next_obs, done)
-        obs = next_obs
-        if ready_to_update:
-            batch = replay_buffer.sample()
-            loss = agent.compute_loss(batch)
-            optimizer.step()
-
-## Evaluation and Deployment
-- When training ends, the **Trainer disappears**; the **Agent remains**.
-- Evaluation loop:
-    obs = env.reset()
-    while not done:
-        action = agent.act(obs, mode="greedy")
-        obs, reward, done = env.step(action)
+### 4. Trainer (The teacher)
+- **What it is:** The implementation of an algorithm that performs one single learning step.
+- **Responsibilities:** 
+  - Own environment, agent, optimizer
+  - Own and manage algorithm-specific buffer
+  - Run rollout collection, training loops
+  - Compute algorithm-specific auxiliary variables using agent's Model
+- **Does NOT:** Schedule multistep learning process
+- The Trainer's algorithm has to be compatible with the Agent's Model variant. Examples:
+    - PPO -> Policy-value
+    - DQN -> Q-value
+- The trainer performs only one learning step, but may use experience from previous steps.
 
 ## Key Takeaway
 - **Environment** defines the world  
 - **Model** approximates functions  
-- **Agent** defines intelligence  
+- **Agent** is a trainable actor  
 - **Trainer** defines learning  
 
 This separation applies cleanly to PPO, DQN, and most modern DRL algorithms.
 
 ## Project Structure
 
-
 ```text
 PytorchDRL/
-├── README.md
-│
-├── algorithms/                 # algorithm-level logic (generic)
+├── drl/                  # Future package root
+│   ├── common/ 
+│   │   ├── types.py              # Type aliases 
+│   │   ├── interfaces.py         # Interfaces for Environment, Agent, and Model variants
+│   │   └── utils.py              # Shared helpers  
+│   │   
+│   ├── models/               # Library of pre-built frozen Model implementations
+│   │   ├── policy_value/         # forward(obs) -> (policy, value)
+│   │   │   ├── mlp.py
+│   │   │   └── other.py   
+│   │   ├── q_value/              # forward(obs) -> q_values
+│   │   │   ├── mlp.py
+│   │   │   └── other.py   
+│   │   └── policy_only/          # forward(obs) -> policy
+│   │       ├── mlp.py 
+│   │       └── other.py           
+│   │   
+│   ├── agents/               # Frozen Agent implementations (based on Model variants)
+│   │   ├── policy_value_agent.py
+│   │   ├── q_value_agent.py
+│   │   └── policy_only_agent.py
 │   │
-│   ├── common/                 # shared algorithm abstractions
-│   │   └── env_interface.py    # Environment ABC
-│   │
-│   ├── ppo/
-│   │   ├── interfaces.py       # PPO-specific ABCs
-│   │   ├── buffer.py           # RolloutBuffer
-│   │   ├── trainer.py          # PPOTrainer
-│   │   └── networks/
-│   │       ├── base.py         # ActorCritic ABC
-│   │       ├── mlp.py
-│   │       ├── conv1d.py
-│   │       └── resconv1d.py
-│   │
-│   └── dqn/                    # future
-│       ├── interfaces.py
-│       ├── buffer.py
-│       ├── trainer.py
-│       └── networks/
-│           └── qnet.py
+│   └── trainers/             # Library of pre-built frozen Trainer implementations
+│       ├── ppo.py                # PPOTrainer + PPOBuffer
+│       ├── dqn.py                # DQNTrainer + DQNBuffer
+│       └── other.py             
 │
-├── environments/               # problem domains
-│   └── ipd/
-│       ├── memory1/            # existing code
-│       │   ├── strategies.py
-│       │   └── population.py
-│       ├── env.py              # IPDEnv
-│       ├── observations.py
-│       └── config.py
+├── envs/               # User extension space for concrete environments
+│   ├── ipd/
+│   │   ├── config.py
+│   │   ├── environment.py
+│   │   └── utilities.py
+│   └── other/
 │
-├── common/                     # small shared helpers
-│   ├── typing.py
-│   └── torch_utils.py
-│
-├── experiments/                # glue code
-│   ├── ipd_ppo_train.py
-│   ├── ipd_ppo_sweep.py
-│   └── debug_env.py
-│
-└── tests/
-    ├── test_rollout_buffer.py
-    ├── test_ipd_env.py
-    └── test_ppo_trainer.py
+└── experiments/
+    ├── train_ppo_ipd.py
+    └── other.py
+```
+
+Each level answers a different question:
+
+- models/ - How does the brain compute?
+- agents/ - How does an actor behave given a brain?
+- trainers/ - How does learning improve the actor / change the brain?
+- envs/ - What world does the actor interact with?
+- experiments/ - What learning schedule is being run?
