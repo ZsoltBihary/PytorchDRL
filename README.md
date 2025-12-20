@@ -33,14 +33,14 @@ The design is based on four core abstractions: Environment, Model (Network), Age
     - Policy-only: `forward(obs) -> policy_logits`
 
 ### 3. Agent (The student)
-- **What it is:** The trained actor that interacts with the environment
+- **What it is:** The actor that interacts with the environment
 - **Responsibilities:** 
-  - Own trained model(s)
-  - Select action given observation
-  - Support evaluation and deployment
+  - Own model
+  - Select action given observation (evaluation, deployment support)
+  - Select action and return model outputs given observation (trainer rollout support)
 - **Does NOT:** 
   - Own optimizers, 
-  - Support training logic
+  - Perform training logic
   - Know about the algorithm that trained it
 - Each agent uses one of the model variants.
 - Agents are intentionally thin and stable. They are designed to survive the training process.
@@ -48,16 +48,16 @@ The design is based on four core abstractions: Environment, Model (Network), Age
 ### 4. Trainer (The teacher)
 - **What it is:** The implementation of an algorithm that performs one single learning step.
 - **Responsibilities:** 
-  - Own environment, optimizer
+  - Own environment, agent, optimizer
   - Own and manage algorithm-specific buffer
-  - Own model(s), compute algorithm-specific auxiliary variables
-  - Run rollout collection, update model
+  - Rollout experience collection 
+  - Update agent's model
 - **Does NOT:**
-  - Directly own agent
+  - Directly own model
   - Schedule multistep learning process
-- The trainer's algorithm has to be compatible with its model variant. Examples:
-    - PPO -> Policy-value
-    - DQN -> Q-value
+- The trainer's algorithm has to be compatible with its agent variant. Examples:
+    - PPO -> Policy-value agent
+    - DQN -> Q-value agent
 - The trainer performs only one learning step, but may use experience from previous steps.
 
 ## Key Takeaway

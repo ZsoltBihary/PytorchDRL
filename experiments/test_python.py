@@ -1,9 +1,9 @@
 import torch
-# from line_profiler_pycharm import profile
+from line_profiler_pycharm import profile
 # from torchinfo import summary
 
 
-# @profile
+@profile
 def test_func():
     x = torch.randn(5, 5)
     print(x)
