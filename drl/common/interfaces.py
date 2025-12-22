@@ -114,6 +114,7 @@ class Agent(ABC):
     - expose act(): produces only the action for evaluation / deployment
     - implicit: store model attribute (nn.Module)
     """
+    model: nn.Module
 
     @abstractmethod
     def rollout_step(self, obs: Observation):
