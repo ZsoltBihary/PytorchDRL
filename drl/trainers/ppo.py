@@ -11,8 +11,8 @@ from drl.agents.policy_value_agent import PolicyValueAgent
 class PPOTrainer:
 
     def __init__(self, env: Environment, agent: PolicyValueAgent, *,
-                 rollout_length: int, epochs: int, mini_batch: int,
-                 gamma: float, lam: float,
+                 rollout_length: int, lam: float,
+                 epochs: int, mini_batch: int,
                  clip_eps: float, lr: float,
                  ent_coef: float = 0.01, max_grad_norm: float = 0.5):
         # consume parameters
@@ -21,7 +21,7 @@ class PPOTrainer:
         self.rollout_length = rollout_length
         self.epochs = epochs
         self.mini_batch = mini_batch
-        self.gamma = gamma
+        self.gamma = env.gamma  # has to be consistent
         self.lam = lam
         self.clip_eps = clip_eps
         self.ent_coef = ent_coef

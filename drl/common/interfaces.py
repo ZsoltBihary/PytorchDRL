@@ -1,5 +1,5 @@
 # drl/common/interfaces.py
-
+import torch
 import torch.nn as nn
 from abc import ABC, abstractmethod
 from drl.common.types import Observation, Action, Reward, Done, PolicyLogits, QValues, Value
@@ -8,37 +8,104 @@ from drl.common.types import Observation, Action, Reward, Done, PolicyLogits, QV
 # ---------------------------------------------------------
 # Environment interface
 # ---------------------------------------------------------
-
 class Environment(ABC):
     """
-    Base class for environments.
-    User implementation must follow this contract.
+    Base class for vectorized RL environments.
+
+    Required semantics:
+    - maintains a batch of B parallel environments
+    - internal state lives inside the env object
+    - reset_state(idx) allows resetting selected envs
+    - apply(action) updates internal state, returns rewards and termination flags
+    - get_obs() returns current observations
     """
 
+    # ---------------------------------------------------
+    # required abstract properties
+    # ---------------------------------------------------
     @property
     @abstractmethod
-    def batch_size(self) -> int:
-        ...
+    def batch_size(self) -> int: ...
 
     @property
     @abstractmethod
-    def obs_shape(self) -> tuple[int, ...]:
-        """Shape of a single observation (without batch dimension)."""
-        ...
+    def random_termination(self) -> bool: ...
+
+    @property
+    @abstractmethod
+    def gamma(self) -> float: ...
+
+    @property
+    @abstractmethod
+    def obs_shape(self) -> tuple[int, ...]: ...
+
+    @property
+    @abstractmethod
+    def num_actions(self) -> int: ...
+
+    # ---------------------------------------------------
+    # required abstract methods
+    # ---------------------------------------------------
 
     @abstractmethod
+    def reset_state(self, mask: torch.Tensor) -> None:
+        """
+        Reset the environments selected by mask.
+        mask: BoolTensor, shape (B,)
+        """
+
+    @abstractmethod
+    def apply(self, action: Action) -> tuple[Reward, Done]:
+        """
+        Apply batched actions and update internal state.
+
+        Args:
+            action: LongTensor shape (B,)
+        Returns:
+            reward: FloatTensor shape (B,)
+            done: FloatTensor binary mask shape (B,)
+        """
+
+    @abstractmethod
+    def get_obs(self) -> Observation:
+        """
+        Return current observations from internal state.
+        shape: (B, *obs_shape)
+        """
+
+    # ---------------------------------------------------
+    # default control flow methods
+    # ---------------------------------------------------
     def reset(self) -> Observation:
-        ...
+        """
+        Reset all environments in the batch.
+        Return current observations
+        """
+        mask = torch.ones(self.batch_size, dtype=torch.bool)
+        self.reset_state(mask)
+        return self.get_obs()
 
-    @abstractmethod
     def step(self, action: Action) -> tuple[Observation, Reward, Done]:
-        ...
+        # apply environment transition
+        reward, env_done = self.apply(action)
+        # conditionally, represent discounting with random termination.
+        if self.random_termination:
+            # gamma is the standard RL discount factor interpreted here as survival prob
+            rand_done = (torch.rand(self.batch_size, device=reward.device) < (1 - self.gamma)).float()
+            done = torch.maximum(env_done, rand_done)
+        else:
+            done = env_done
+        # Reset every state where done is 1.0. This is consistent with env termination + random termination
+        reset_mask = done > 0.5
+        if reset_mask.any():
+            self.reset_state(reset_mask)
+        # whether we used random termination or not, this is the correct output
+        return self.get_obs(), reward, done
 
 
 # ---------------------------------------------------------
 # Agent interface
 # ---------------------------------------------------------
-
 class Agent(ABC):
     """
     Base class for agents.
@@ -80,7 +147,6 @@ class Agent(ABC):
 # ---------------------------------------------------------
 # Model interfaces (forward signatures only)
 # ---------------------------------------------------------
-
 class PolicyValueModel(nn.Module, ABC):
     """forward(obs) -> (policy_logits, value)"""
 

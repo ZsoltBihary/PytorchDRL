@@ -99,7 +99,11 @@ PytorchDRL/
 │       ├── dqn.py                # DQNTrainer + DQNBuffer
 │       └── other.py             
 │
-├── envs/               # User extension space for concrete environments
+├── worlds/             # User extension space for concrete worlds
+│   ├── gridworld/          # Simple navigation problem
+│   │   ├── config.py
+│   │   ├── environment.py
+│   │   └── utilities.py
 │   ├── ipd/                # Iterated Prisoner's Dilemma problem
 │   │   ├── config.py
 │   │   ├── environment.py
@@ -116,5 +120,5 @@ Each level answers a different question:
 - models/ - How does the brain compute?
 - agents/ - How does an actor behave given a brain?
 - trainers/ - How does learning improve the actor / change the brain?
-- envs/ - What world does the actor interact with?
+- worlds/ - What environment does the actor interact with?
 - experiments/ - What learning schedule is being run?
