@@ -12,7 +12,7 @@ def test_func():
     return x_CUDA
 
 
-print("Hello, StratPopulation!")
+print("Hello, PytorchDRL!")
 print("PyTorch version:", torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
 

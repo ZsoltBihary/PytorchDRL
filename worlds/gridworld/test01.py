@@ -1,8 +1,5 @@
 # envs/gridworld/test01.py
 
-# import torch
-# import torch.nn as nn
-# from drl.common.interfaces import PolicyValueModel
 from worlds.gridworld.environment import GridWorld
 from drl.models.policy_value.mlp import PolicyValueMLP
 from drl.agents.policy_value_agent import PolicyValueAgent
@@ -20,15 +17,15 @@ print("model is ready")
 agent = PolicyValueAgent(model=model)
 print("agent is ready")
 trainer = PPOTrainer(env=env, agent=agent,
-                     rollout_length=128, epochs=4, mini_batch=64,
-                     lam=0.9, clip_eps=0.2, lr=0.0001)
+                     rollout_length=64, epochs=3, mini_batch=64,
+                     lam=0.9, clip_eps=0.2, lr=0.001)
 print("trainer is ready")
 evaluator = Evaluator(env=env_eval, agent=agent, max_steps=100)
 print("evaluator is ready")
 
 # obs = env_eval.reset()
 # env_eval.render()
-for i in range(50):
+for i in range(10):
     result = trainer.step()
     print(i)
     print(result)
