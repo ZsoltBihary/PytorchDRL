@@ -3,8 +3,6 @@
 
 from torch import Tensor
 
-# Observation = Tensor
-
 # Recursive tensor tree type
 TensorTree = Tensor | tuple["TensorTree", ...]
 

@@ -1,24 +1,11 @@
 # import torch
 from config import Config
-# from strat_population import StratPopulation
+# from strat_population import Memory1Population
 from population_dyn import PopulationDyn
 
 if __name__ == "__main__":
-    # --- basic config for quick testing ---
-    conf = Config(
-        gamma=0.95,
-        trembling_hand=0.02,
-        skeleton_K=2,
-        only_skeleton=True,
-        num_total_strat=1000,  # ignored when only_skeleton=True
-        mutation=0.0,
-        dt=0.05,
-        child_sigma=0.05,
-        redistribution_rate=0.05,
-        b_NS=2.5,  # b_NS: float = 2.0,  b_NS > 1
-        c_NS=0.5,  # c_NS: float = 0.5,  c_NS > 0
-    )
-    thresh = 0.000000002
+    conf = Config()
+    thresh = 0.0001
     replicator_steps = 1000
     num_iter = 50
 
@@ -36,3 +23,6 @@ if __name__ == "__main__":
         # popdyn.pop.compute_VX_matrix()
         popdyn.print_survivors(threshold=thresh)
         print(i, popdyn.x @  popdyn.pop.p)
+
+    p_pool, w_pool = popdyn.extract_pool()
+    a = 42

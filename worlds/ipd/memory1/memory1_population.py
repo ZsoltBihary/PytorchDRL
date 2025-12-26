@@ -1,10 +1,10 @@
 import torch
 from torch import Tensor
 import itertools
-from config import Config
+from worlds.ipd.memory1.config import Config
 
 
-class StratPopulation:
+class Memory1Population:
     """
     A population of memory‑1 IPD strategies.
 
@@ -56,7 +56,7 @@ class StratPopulation:
 
     @classmethod
     def build(cls, conf: Config, device="cpu"):
-        """ Build a StratPopulation based on the configuration. """
+        """ Build a Memory1Population based on the configuration. """
 
         # 1. Skeleton grid (K^5 points)
         skeleton = cls.make_K_grid(conf.skeleton_K, device=device)
@@ -141,7 +141,7 @@ class StratPopulation:
 
 if __name__ == "__main__":
     # -------------------------------
-    # Sanity check for StratPopulation
+    # Sanity check for Memory1Population
     # -------------------------------
     conf = Config(only_skeleton=True, skeleton_K=2)
     print("=== Config parameters ===")
@@ -155,8 +155,8 @@ if __name__ == "__main__":
     print(f"payoffs: {conf.payoffs}")
 
     # Build the population
-    pop = StratPopulation.build(conf)
-    print("\n=== StratPopulation sanity check ===")
+    pop = Memory1Population.build(conf)
+    print("\n=== Memory1Population sanity check ===")
     print(f"p shape: {pop.p.shape}")
     print(f"p device: {pop.p.device}")
     print(f"min(p): {pop.p.min().item():.4f}")

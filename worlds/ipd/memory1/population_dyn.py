@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor
-from strat_population import StratPopulation
-from config import Config
+from worlds.ipd.memory1.memory1_population import Memory1Population
+from worlds.ipd.memory1.config import Config
 
 
 class PopulationDyn:
@@ -10,7 +10,7 @@ class PopulationDyn:
 
     Attributes
     ----------
-    pop : StratPopulation
+    pop : Memory1Population
         The population of strategies (p-vectors fixed).
     x : Tensor
         Current strategy frequencies (N,) summing to 1.
@@ -18,7 +18,7 @@ class PopulationDyn:
     def __init__(self, conf: Config, device="cpu"):
         self.conf = conf
         self.device = device
-        self.pop = StratPopulation.build(conf, device)
+        self.pop = Memory1Population.build(conf, device)
         self.N_tot = conf.num_total_strat
         assert self.N_tot == self.pop.N
         self.N_skel = conf.num_skeleton_strat
@@ -33,6 +33,32 @@ class PopulationDyn:
         self.mut_floor = conf.mutation / self.N_tot
         self.lambda_diff = conf.redistribution_rate
         self.child_sig = conf.child_sigma
+
+    def extract_pool(self, threshold: float = 1e-3, renormalize: bool = True) -> tuple[Tensor, Tensor]:
+        """
+        Extract a filtered memory-1 opponent pool from PopulationDyn.
+
+        Args:
+            threshold: minimum frequency to keep a strategy
+            renormalize: whether to renormalize weights to sum to 1
+
+        Returns:
+            p_pool: (K,5) tensor of memory-1 probabilities
+            w_pool: (K,) tensor of weights summing to 1
+        """
+        x = self.x.detach()
+        p = self.pop.p.detach()
+
+        mask = x > threshold
+        assert mask.any(), "Threshold too high: no strategies survive"
+
+        p_pool = p[mask]
+        w_pool = x[mask]
+
+        if renormalize:
+            w_pool = w_pool / w_pool.sum()
+
+        return p_pool, w_pool
 
     def update_VX(self):
         self.VX = self.pop.compute_VX_matrix()
@@ -115,7 +141,7 @@ class PopulationDyn:
         self.x[elim_idx] = child_x
 
         # 6. Apply trembling-hand clipping to the population probabilities (all strategies)
-        self.pop.p = StratPopulation.apply_trembling_hand(self.pop.p, self.pop.eps)
+        self.pop.p = Memory1Population.apply_trembling_hand(self.pop.p, self.pop.eps)
 
         # 7. Enforce mutation floor and renormalize x
         self.apply_mutation_floor()
@@ -136,7 +162,7 @@ class PopulationDyn:
         survivors = (x > threshold).nonzero(as_tuple=True)[0]
 
         # print("Survivors (signature ints, weight*10000 ints):")
-        print(" idx |  p0 pCC pCD pDC pDD | weight_x10000")
+        print(" idx |  p0 pCC pCD pDC pDD | weight")
         print("-" * 55)
         scale = self.conf.skeleton_K - 1
         # scale = 1.0
@@ -146,7 +172,7 @@ class PopulationDyn:
             sig_str = "   ".join(str(v) for v in sig)
             # convert weight
             w = int(x[i] * 10000)
-            print(f"{int(i):3d}  |  {sig_str}  | {w}")
+            print(f"{int(i):3d}  |  {sig_str}  | {w} / 10000")
 
 
 if __name__ == "__main__":
@@ -181,6 +207,7 @@ if __name__ == "__main__":
         print(i, popdyn.x @  popdyn.pop.p)
         popdyn.replace()
 
+    p_pool, w_pool = popdyn.extract_pool()
     # # --- final assertions ---
     # assert abs(popdyn.x.sum().item() - 1.0) < 1e-6, "Frequencies must sum to 1"
 

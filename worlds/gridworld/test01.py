@@ -6,7 +6,7 @@ from drl.agents.policy_value_agent import PolicyValueAgent
 from drl.trainers.ppo import PPOTrainer
 from drl.common.evaluator import Evaluator
 
-H, W, gamma = 5, 5, 0.9
+H, W, gamma = 7, 7, 0.9
 env = GridWorld(batch_size=256, gamma=gamma, random_termination=True, height=H, width=W)
 env_eval = GridWorld(batch_size=256, gamma=gamma, random_termination=False, height=H, width=W)
 print("env and env_val are ready")
@@ -17,7 +17,7 @@ print("model is ready")
 agent = PolicyValueAgent(model=model)
 print("agent is ready")
 trainer = PPOTrainer(env=env, agent=agent,
-                     rollout_length=64, epochs=3, mini_batch=64,
+                     rollout_length=64, epochs=5, mini_batch=64,
                      lam=0.9, clip_eps=0.2, lr=0.001)
 print("trainer is ready")
 evaluator = Evaluator(env=env_eval, agent=agent, max_steps=100)
