@@ -1,10 +1,13 @@
 # PytorchDRL 
 
-## Conceptual Architecture
+Pytorch-based Deep Reinforcement Learning framework.
 
-This project follows a clear abstraction hierarchy for deep reinforcement learning. 
-The goal is conceptual clarity, extensibility across algorithms (PPO, DQN, etc.), and long-term maintainability. 
-The design is based on four core abstractions: Environment, Model (Network), Agent, and Trainer. 
+The project follows a clear abstraction hierarchy for DRL. 
+The goal is conceptual clarity, extensibility across algorithms (PPO, DQN, etc.), 
+extensibility across network architectures (MLP, Conv1d, Conv2d, LSTM, etc.),
+and long-term maintainability. 
+The design is based on four core abstractions: 
+Environment, Model (Network), Agent, and Trainer. 
 
 ## Core Abstractions
 
@@ -41,8 +44,12 @@ The design is based on four core abstractions: Environment, Model (Network), Age
 - **Does NOT:** 
   - Own optimizers, 
   - Perform training logic
-  - Know about the algorithm that trained it
-- Each agent uses one of the model variants.
+  - Know about the algorithm that trained it 
+- Each agent uses one of the model variants. Agent variants are linked to model variants, 
+NOT to trainer algorithm variants.
+  - Policy-value model -> Policy-value agent
+  - Q-value model -> Q-value agent
+  - Policy-only model -> Policy-only agent
 - Agents are intentionally thin and stable. They are designed to survive the training process.
 
 ### 4. Trainer (The teacher)
@@ -50,17 +57,17 @@ The design is based on four core abstractions: Environment, Model (Network), Age
 - **Responsibilities:** 
   - Own environment, agent, optimizer
   - Own and manage algorithm-specific buffer
-  - Rollout experience collection 
+  - Collect experience (rollout)
   - Update agent's model
 - **Does NOT:**
-  - Directly own model
+  - Directly own model (except target model with DQN)
   - Schedule multistep learning process
 - The trainer's algorithm has to be compatible with its agent variant. Examples:
     - PPO -> Policy-value agent
     - DQN -> Q-value agent
 - The trainer performs only one learning step, but may use experience from previous steps.
 
-## Key Takeaway
+### Key Takeaway
 - **Environment** defines the world  
 - **Model** approximates functions  
 - **Agent** is a trainable actor  
@@ -76,19 +83,18 @@ PytorchDRL/
 │   ├── common/ 
 │   │   ├── types.py              # Type aliases 
 │   │   ├── interfaces.py         # Interfaces for Environment, Agent, and Model variants
-│   │   └── utils.py              # Shared helpers  
+│   │   └── evaluator.py          # Evaluator implemented  
 │   │   
 │   ├── models/               # Library of pre-built frozen Model implementations
 │   │   ├── policy_value/         # forward(obs) -> (policy, value)
 │   │   │   ├── mlp.py
-│   │   │   └── other.py   
+│   │   │
 │   │   ├── q_value/              # forward(obs) -> q_values
 │   │   │   ├── mlp.py
-│   │   │   └── other.py   
+│   │   │
 │   │   └── policy_only/          # forward(obs) -> policy
 │   │       ├── mlp.py 
-│   │       └── other.py           
-│   │   
+│   │          
 │   ├── agents/               # Frozen Agent implementations (based on Model variants)
 │   │   ├── policy_value_agent.py
 │   │   ├── q_value_agent.py
@@ -97,22 +103,17 @@ PytorchDRL/
 │   └── trainers/             # Library of pre-built frozen Trainer implementations
 │       ├── ppo.py                # PPOTrainer + PPOBuffer
 │       ├── dqn.py                # DQNTrainer + DQNBuffer
-│       └── other.py             
 │
-├── worlds/             # User extension space for concrete worlds
-│   ├── gridworld/          # Simple navigation problem
-│   │   ├── config.py
-│   │   ├── environment.py
-│   │   └── utilities.py
-│   ├── ipd/                # Iterated Prisoner's Dilemma problem
-│   │   ├── config.py
-│   │   ├── environment.py
-│   │   └── utilities.py
-│   └── other/
-│
-└── experiments/
-    ├── train_ppo_ipd.py
-    └── other.py
+└── worlds/             # User extension space for concrete worlds
+    ├── gridworld/          # Simple navigation problem
+    │   ├── environment.py
+    │   ├── model.py
+    │   └── test01.py
+    ├── ipd/                # Iterated Prisoner's Dilemma problem
+    │   ├── environment.py
+    │   ├── model.py
+    │   └── test01.py
+    ├── other/
 ```
 
 Each level answers a different question:
@@ -120,5 +121,89 @@ Each level answers a different question:
 - models/ - How does the brain compute?
 - agents/ - How does an actor behave given a brain?
 - trainers/ - How does learning improve the actor / change the brain?
-- worlds/ - What environment does the actor interact with?
-- experiments/ - What learning schedule is being run?
+- worlds/ - Formulation of the specific problem
+  - What specific environment does the actor interact with? 
+  - What specific model is used? 
+  - What is the specific problem to be solved?
+
+## How to Create a Custom World
+Make a subdirectory under worlds/
+
+### 1. Custom environment
+Implement your own CustomEnvironment class, derived from the base Environment class. 
+These interfaces MUST be implemented:
+```python
+from drl.common.interfaces import Environment
+from drl.common.types import Observation, Action, Reward, Done
+
+class CustomEnvironment(Environment):
+
+    @property
+    def batch_size(self) -> int: ...
+       
+    @property
+    def random_termination(self) -> bool: ...
+       
+    @property
+    def gamma(self) -> float: ...
+        
+    @property
+    def obs_shape(self) -> tuple[int, ...]: ...
+        
+    @property
+    def num_actions(self) -> int: ...
+
+    def reset_state(self, mask: Tensor) -> None: ...
+
+    def apply(self, action: Action) -> tuple[Reward, Done]: ...
+
+    def get_obs(self) -> Observation: ...
+```
+
+### 2. Custom model
+Choose a model from the model library, or implement your own 
+CustomModel class, derived from one of the base Model class variants. 
+For example, you want a custom policy-value model for ppo training. 
+The forward() interface MUST be implemented:
+```python
+from drl.common.types import Observation, PolicyLogits, Value
+from drl.common.interfaces import PolicyValueModel
+
+class CustomPolicyValueModel(PolicyValueModel):
+
+    def forward(self, obs: Observation) -> tuple[PolicyLogits, Value]: ...
+```
+Make sure Observation type and PolicyLogits type in your model implementation 
+are consistent with Observation type and Action type in your 
+environment implementation. 
+
+### 3. Agent, trainer, custom script
+Agent variants and trainer variants are already implemented. Following up on
+the ppo training example, your minimal script may look like this:
+```python
+from drl.agents.policy_value_agent import PolicyValueAgent
+from drl.trainers.ppo import PPOTrainer
+from drl.common.evaluator import Evaluator
+
+# set up configuration parameters: batch_size, gamma, custom_parameters
+
+env_train = CustomEnvironment(batch_size, gamma, custom_parameters, random_termination=True)
+env_eval = CustomEnvironment(batch_size, gamma, custom_parameters, random_termination=False)
+print("env_train and env_eval are ready")
+
+model = CustomPolicyValueModel(custom_parameters)
+print("model is ready")
+
+agent = PolicyValueAgent(model=model, custom_parameters)
+print("agent is ready")
+
+trainer = PPOTrainer(env=env_train, agent=agent,
+                     rollout_length=128, epochs=4, mini_batch=64,
+                     lam=0.9, clip_eps=0.2, lr=0.0001)
+print("trainer is ready")
+
+evaluator = Evaluator(env=env_eval, agent=agent)
+print("evaluator is ready")
+
+# ... your training script ...
+```
