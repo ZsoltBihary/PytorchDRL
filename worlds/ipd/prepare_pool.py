@@ -21,11 +21,12 @@ def prepare_pool():
 
     popdyn.print_survivors(threshold=thresh)
     p_pool, w_pool = popdyn.extract_pool(threshold=thresh)
-    return p_pool, w_pool, conf.gamma
+    return p_pool, w_pool, conf.gamma, conf.payoffs
 
 
 if __name__ == "__main__":
-    p_pool, w_pool, gamma = prepare_pool()
+    p_pool, w_pool, gamma, payoffs = prepare_pool()
     print("p_pool =", p_pool)
     print("w_pool =", w_pool)
     print("gamma =", gamma)
+    print("payoffs =", payoffs)

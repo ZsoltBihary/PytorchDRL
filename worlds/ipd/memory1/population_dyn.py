@@ -159,10 +159,11 @@ class PopulationDyn:
         """
         p = self.pop.p.detach().cpu()
         x = self.x.detach().cpu()
+        f = self.VX @ self.x
         survivors = (x > threshold).nonzero(as_tuple=True)[0]
 
         # print("Survivors (signature ints, weight*10000 ints):")
-        print(" idx |  p0 pCC pCD pDC pDD | weight")
+        print(" idx |  p0 pCC pCD pDC pDD | weight | return")
         print("-" * 55)
         scale = self.conf.skeleton_K - 1
         # scale = 1.0
@@ -172,24 +173,26 @@ class PopulationDyn:
             sig_str = "   ".join(str(v) for v in sig)
             # convert weight
             w = int(x[i] * 10000)
-            print(f"{int(i):3d}  |  {sig_str}  | {w} / 10000")
+            ret = int(f[i] * 100)
+            print(f"{int(i):3d}  |  {sig_str}  | {w:5d}  | {ret:3d}")
 
 
 if __name__ == "__main__":
     # --- basic config for quick testing ---
-    conf = Config(
-        gamma=0.98,
-        trembling_hand=0.0,
-        skeleton_K=3,
-        only_skeleton=False,
-        num_total_strat=1000,  # ignored when only_skeleton=True
-        mutation=0.001,
-        dt=0.05,
-        child_sigma=0.05
-    )
-    thresh = 0.003
-    replicator_steps = 20
-    num_iter = 10
+    # conf = Config(
+    #     gamma=0.98,
+    #     trembling_hand=0.0,
+    #     skeleton_K=3,
+    #     only_skeleton=False,
+    #     num_total_strat=1000,  # ignored when only_skeleton=True
+    #     mutation=0.001,
+    #     dt=0.05,
+    #     child_sigma=0.05
+    # )
+    conf = Config()
+    thresh = 0.0001
+    replicator_steps = 1000
+    num_iter = 50
 
     print("Building PopulationDyn...")
     popdyn = PopulationDyn(conf, device="cpu")
@@ -205,7 +208,8 @@ if __name__ == "__main__":
         popdyn.pop.compute_VX_matrix()
         popdyn.print_survivors(threshold=thresh)
         print(i, popdyn.x @  popdyn.pop.p)
-        popdyn.replace()
+        if popdyn.N_repl > 0:
+            popdyn.replace()
 
     p_pool, w_pool = popdyn.extract_pool()
     # # --- final assertions ---

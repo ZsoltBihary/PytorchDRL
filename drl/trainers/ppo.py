@@ -30,7 +30,7 @@ class PPOTrainer:
         self.buffer = PPOBuffer(rollout_length=rollout_length, batch_size=env.batch_size,
                                 obs_example=env.reset())
         # optimizer
-        self.optimizer = torch.optim.Adam(self.agent.model.parameters(), lr=lr)
+        self.optimizer = torch.optim.Adam(self.agent.model.parameters(), lr=lr, weight_decay=0.0001)
         # initialize observation
         self.obs = env.reset()
 
