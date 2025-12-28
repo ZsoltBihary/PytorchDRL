@@ -9,7 +9,7 @@ class Config:
             trembling_hand: float = 0.05,            # execution noise
             skeleton_K: int = 2,                    # fixed skeleton grid dimension
             only_skeleton: bool = True,             # flag for only constructing the fixed skeleton
-            num_total_strat: int = 32,            # total number of strategies
+            num_total_strat: int = 1000,            # total number of strategies
             mutation: float = 0.0,                  # mutation ratio
             # Nowak–Sigmund / Press–Dyson parametrization
             b_NS: float = 2.0,

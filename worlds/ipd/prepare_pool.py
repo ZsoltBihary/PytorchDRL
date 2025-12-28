@@ -26,7 +26,7 @@ def prepare_pool():
 
 if __name__ == "__main__":
     p_pool, w_pool, gamma, payoffs = prepare_pool()
-    print("p_pool =", p_pool)
-    print("w_pool =", w_pool)
+    # print("p_pool =", p_pool)
+    # print("w_pool =", w_pool)
     print("gamma =", gamma)
     print("payoffs =", payoffs)
