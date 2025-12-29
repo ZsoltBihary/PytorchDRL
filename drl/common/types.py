@@ -2,11 +2,9 @@
 # Semantic tensor aliases shared across drl/
 
 from torch import Tensor
+from drl.common.tensor_tree import TensorTree
 
-# Recursive tensor tree type
-TensorTree = Tensor | tuple["TensorTree", ...]
-
-Observation = TensorTree   # shape (B, ...) for all components
+Observation = TensorTree   # shape (B, ...) for all leaves
 Action = Tensor            # shape (B,)
 Reward = Tensor            # shape (B,)
 Done = Tensor              # shape (B,)
