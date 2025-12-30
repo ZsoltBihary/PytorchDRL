@@ -54,7 +54,7 @@ class GridWorld(Environment):
         return self._num_actions
 
     @property
-    def obs_shape(self) -> tuple[int, ...]:
+    def obs_template(self) -> tuple[int, ...]:
         return self._obs_shape
 
     @property

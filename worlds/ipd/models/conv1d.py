@@ -115,9 +115,6 @@ class PolicyValueConv1D(PolicyValueModel):
         self.trunk_blocks = nn.Sequential(
             *[Residual1D(C=trunk_channels) for _ in range(num_res_blocks)]
         )
-        # self.trunk_blocks = nn.Sequential(
-        #     *[ResidualBlock1D(trunk_channels) for _ in range(num_res_blocks)]
-        # )
         # Heads
         self.policy_head = Head1D(trunk_channels, policy_hidden, action_dim, L, final_gain=0.01)
         self.value_head = Head1D(trunk_channels, value_hidden, 1, L, final_gain=0.01)
@@ -132,7 +129,7 @@ class PolicyValueConv1D(PolicyValueModel):
             logits: (B, action_dim)
             value: (B,)
         """
-        x = obs.transpose(1, 2)           # (B, C, L)
+        x = obs.transpose(1, 2)                # (B, C, L)
         x = self.input_conv(x)
         x = self.norm(x)
         x = F.relu(x)

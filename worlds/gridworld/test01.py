@@ -10,7 +10,7 @@ H, W, gamma = 7, 7, 0.9
 env = GridWorld(batch_size=256, gamma=gamma, random_termination=True, height=H, width=W)
 env_eval = GridWorld(batch_size=256, gamma=gamma, random_termination=False, height=H, width=W)
 print("env and env_val are ready")
-obs_dim = env.obs_shape[0]
+obs_dim = env.obs_template[0]
 num_actions = env.num_actions
 model = PolicyValueMLP(obs_dim=obs_dim, action_dim=num_actions, hidden_dim=32)
 print("model is ready")

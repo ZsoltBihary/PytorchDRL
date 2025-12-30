@@ -261,8 +261,8 @@ class DQNBuffer(Dataset):
     ) -> None:
         """Recursively write a batch of observations at indices idx."""
         if isinstance(storage, torch.Tensor):
-            # storage: (N, *obs_shape)
-            # obs:     (B, *obs_shape)
+            # storage: (N, *obs_template)
+            # obs:     (B, *obs_template)
             storage[idx] = obs
         elif isinstance(storage, tuple):
             for s_child, o_child in zip(storage, obs):

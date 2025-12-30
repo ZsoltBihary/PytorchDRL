@@ -1,6 +1,7 @@
 # drl/common/interfaces.py
 import torch
 import torch.nn as nn
+from torch import Tensor
 from abc import ABC, abstractmethod
 from drl.common.types import Observation, Action, Reward, Done, PolicyLogits, QValues, Value
 
@@ -37,7 +38,7 @@ class Environment(ABC):
 
     @property
     @abstractmethod
-    def obs_shape(self) -> tuple[int, ...]: ...
+    def obs_template(self) -> Observation: ...
 
     @property
     @abstractmethod
@@ -48,7 +49,7 @@ class Environment(ABC):
     # ---------------------------------------------------
 
     @abstractmethod
-    def reset_state(self, mask: torch.Tensor) -> None:
+    def reset_state(self, mask: Tensor) -> None:
         """
         Reset the environments selected by mask.
         mask: BoolTensor, shape (B,)
@@ -69,8 +70,8 @@ class Environment(ABC):
     @abstractmethod
     def get_obs(self) -> Observation:
         """
-        Return current observations from internal state.
-        shape: (B, *obs_shape)
+        Return current observation from internal state.
+        shape: (B, *obs_template)
         """
 
     # ---------------------------------------------------

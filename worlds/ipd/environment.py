@@ -68,8 +68,8 @@ class IteratedPrisonersDilemma(Environment):
         return self._gamma
 
     @property
-    def obs_shape(self) -> tuple[int, ...]:
-        return self._L, 5
+    def obs_template(self) -> Observation:
+        return torch.zeros(size=(self._L, 5))
 
     @property
     def num_actions(self) -> int:

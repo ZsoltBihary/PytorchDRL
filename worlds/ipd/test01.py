@@ -10,7 +10,7 @@ from worlds.ipd.environment import IteratedPrisonersDilemma
 from worlds.ipd.models.conv1d import PolicyValueConv1D
 
 p_pool, w_pool, gamma, payoffs = prepare_pool()
-B = 512
+B = 128
 L = 20
 env = IteratedPrisonersDilemma(batch_size=B, gamma=gamma, random_termination=True, history_len=L,
                                opponent_probs=p_pool, opponent_weights=w_pool, payoffs=payoffs)
@@ -18,8 +18,8 @@ env_eval = IteratedPrisonersDilemma(batch_size=B, gamma=gamma, random_terminatio
                                     opponent_probs=p_pool, opponent_weights=w_pool, payoffs=payoffs)
 
 print("env and env_val are ready")
-model = PolicyValueConv1D(L=L, obs_channels=5, action_dim=2,
-                          trunk_channels=32, num_res_blocks=4,
+model = PolicyValueConv1D(L=L, obs_channels=env.obs_template.shape[1], action_dim=2,
+                          trunk_channels=32, num_res_blocks=2,
                           policy_hidden=16, value_hidden=4)
 dummy_obs = torch.randn(B, L, 5)
 # Print model summary
@@ -30,9 +30,9 @@ print("model is ready")
 agent = PolicyValueAgent(model=model, deterministic=False)
 print("agent is ready")
 trainer = PPOTrainer(env=env, agent=agent,
-                     rollout_length=128, epochs=4, mini_batch=128,
+                     rollout_length=128, epochs=2, mini_batch=128,
                      lam=0.95, clip_eps=0.2, lr=0.001)
-# print("trainer is ready")
+print("trainer is ready")
 evaluator = Evaluator(env=env_eval, agent=agent)
 print("evaluator is ready")
 returns = evaluator.run()

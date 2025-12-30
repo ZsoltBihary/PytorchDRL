@@ -20,8 +20,8 @@ class PolicyValueMLP(PolicyValueModel):
         # value head
         self.value_head = nn.Linear(in_features=hidden_dim, out_features=1)
 
-    def forward(self, obs: Observation) -> tuple[PolicyLogits, Value]:
-        x = self.net(obs)
+    def forward(self, data: Observation) -> tuple[PolicyLogits, Value]:
+        x = self.net(data)
         logits = self.policy_head(x)            # shape: (B, A)
         value = self.value_head(x).squeeze(-1)  # shape: (B,)
         return logits, value

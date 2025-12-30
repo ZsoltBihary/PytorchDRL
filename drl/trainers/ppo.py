@@ -6,6 +6,7 @@ from torch.distributions import Categorical
 from drl.common.types import Observation, Action, Reward, Done, Value, LogProb
 from drl.common.interfaces import Environment
 from drl.agents.policy_value_agent import PolicyValueAgent
+import drl.common.tensor_tree as tt
 
 
 class PPOTrainer:
@@ -28,7 +29,7 @@ class PPOTrainer:
         self.max_grad_norm = max_grad_norm
         # buffer
         self.buffer = PPOBuffer(rollout_length=rollout_length, batch_size=env.batch_size,
-                                obs_example=env.reset())
+                                obs_template=env.obs_template)
         # optimizer
         self.optimizer = torch.optim.Adam(self.agent.model.parameters(), lr=lr, weight_decay=0.0001)
         # initialize observation
@@ -136,15 +137,15 @@ class PPOBuffer(Dataset):
         self,
         rollout_length: int,
         batch_size: int,
-        obs_example: Observation,  # example observation to define storage shape
+        obs_template: Observation,  # observation template to define storage shape
         dtype: torch.dtype = torch.float32,
     ):
         self.T = rollout_length
         self.B = batch_size
         self.dtype = dtype
 
-        # Allocate storage recursively
-        self.observations: Observation = self._allocate_obs_storage(obs_example, self.T, self.B, self.dtype)
+        # Allocate storage
+        self.observations = tt.batch_zeros(template=obs_template, batch_size=(self.T, self.B))
         self.actions = torch.zeros((self.T, self.B), dtype=torch.long)
         self.rewards = torch.zeros((self.T, self.B), dtype=self.dtype)
         self.dones = torch.zeros((self.T, self.B), dtype=self.dtype)
@@ -167,7 +168,7 @@ class PPOBuffer(Dataset):
         if self.ptr >= self.T:
             raise RuntimeError("PPOBuffer overflow")
 
-        self._write_obs(self.observations, obs, self.ptr)
+        tt.assign_index_(dst=self.observations, idx=self.ptr, src=obs)
         self.actions[self.ptr] = action
         self.rewards[self.ptr] = reward
         self.dones[self.ptr] = done
@@ -203,41 +204,9 @@ class PPOBuffer(Dataset):
         t = index // self.B
         b = index % self.B
         return (
-            self._read_obs(self.observations, t, b),
+            tt.index(self.observations, (t, b)),
             self.actions[t, b],
             self.log_probs[t, b],
             self.advantages[t, b],
             self.returns[t, b],
         )
-
-    # ------------------------------------------------------------------
-    # Recursive utility functions
-    # ------------------------------------------------------------------
-    def _allocate_obs_storage(self, spec: Observation, T: int, B: int, dtype: torch.dtype) -> Observation:
-        """Recursively allocate a storage structure mirroring the observation tree."""
-        if isinstance(spec, torch.Tensor):
-            shape = spec.shape[1:]  # leave out batch dim
-            return torch.zeros((T, B, *shape), dtype=dtype)
-        elif isinstance(spec, tuple):
-            return tuple(self._allocate_obs_storage(s, T, B, dtype) for s in spec)
-        else:
-            raise TypeError(f"Unsupported spec type: {type(spec)}")
-
-    def _write_obs(self, storage: Observation, obs: Observation, t: int) -> None:
-        """Recursively write a batch of observations at timestep t."""
-        if isinstance(storage, torch.Tensor):
-            storage[t] = obs
-        elif isinstance(storage, tuple):
-            for s_child, o_child in zip(storage, obs):
-                self._write_obs(s_child, o_child, t)
-        else:
-            raise TypeError(f"Unsupported storage type: {type(storage)}")
-
-    def _read_obs(self, storage: Observation, t: int, b: int) -> Observation:
-        """Recursively read a single flattened observation."""
-        if isinstance(storage, torch.Tensor):
-            return storage[t, b]
-        elif isinstance(storage, tuple):
-            return tuple(self._read_obs(s, t, b) for s in storage)
-        else:
-            raise TypeError(f"Unsupported storage type: {type(storage)}")
