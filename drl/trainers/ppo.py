@@ -25,6 +25,7 @@ class PPOTrainer:
         self.gamma = env.gamma  # has to be consistent
         self.lam = lam
         self.clip_eps = clip_eps
+        self.lr = lr
         self.ent_coef = ent_coef
         self.max_grad_norm = max_grad_norm
         # buffer

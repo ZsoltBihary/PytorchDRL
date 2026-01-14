@@ -31,26 +31,18 @@ agent = PolicyValueAgent(model=model, deterministic=False)
 print("agent is ready")
 trainer = PPOTrainer(env=env, agent=agent,
                      rollout_length=128, epochs=2, mini_batch=128,
-                     lam=0.95, clip_eps=0.2, lr=0.001)
+                     lam=0.95, clip_eps=0.2, lr=0.002)
 print("trainer is ready")
 evaluator = Evaluator(env=env_eval, agent=agent)
 print("evaluator is ready")
 returns = evaluator.run()
 print("mean_return:", (1.0 - gamma) * returns.mean())
+
+n_train = 100
 obs = env_eval.reset()
-# env_eval.render()
-for i in range(200):
+for i in range(n_train):
     result = trainer.step()
     print(i)
     print(result)
     returns = evaluator.run()
     print("mean_return:", (1.0 - gamma) * returns.mean())
-
-    # print("=== Test strategy")
-    # for t in range(10):
-    #     # sample random discrete actions (0..3)
-    #     action = agent.act(obs)
-    #     obs, rew, done = env_eval.step(action)
-    #
-    #     print("action:", action[0].item(), "reward:", rew[0].item(), "done:", done[0].int().item())
-    #     env_eval.render()
